@@ -1,0 +1,20 @@
+{
+  "name": "fullstack-logger",
+  "version": "1.0.0",
+  "description": "Fullstack logger capture script",
+  "main": "fullstack-logger.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {},
+  "dependencies": {
+    "console.history": "^1.5.1",
+    "socket.io-client": "^4.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PFA-Pink-Fairy-Armadillo/fullstack-logger.git"
+  }
+}
