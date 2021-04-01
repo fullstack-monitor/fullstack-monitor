@@ -1,8 +1,8 @@
 {
-  "name": "fullstack-logger",
+  "name": "fullstack-monitor",
   "version": "1.0.0",
-  "description": "Fullstack logger capture script",
-  "main": "fullstack-logger.js",
+  "description": "Intercepts logs and requests for a fullstack application",
+  "main": "fullstack-monitor.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,6 +15,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PFA-Pink-Fairy-Armadillo/fullstack-logger.git"
+    "url": "https://github.com/PFA-Pink-Fairy-Armadillo/fullstack-monitor.git"
   }
 }
