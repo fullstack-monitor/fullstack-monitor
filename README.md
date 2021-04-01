@@ -1,9 +1,9 @@
-# Fullstack-Logger
+# Fullstack-Monitor
 
 ## Instructions
 
 ```
-npm install fullstack-logger
+npm install fullstack-monitor
 ```
 
 ## Contributors
