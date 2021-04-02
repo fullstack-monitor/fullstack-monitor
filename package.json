@@ -1,6 +1,6 @@
 {
   "name": "fullstack-monitor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Intercepts logs and requests for a fullstack application",
   "main": "fullstack-monitor.js",
   "scripts": {
