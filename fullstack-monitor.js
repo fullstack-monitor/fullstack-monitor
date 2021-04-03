@@ -38,7 +38,7 @@ const getStack = (type, args) => {
 
 const setup = async (originType) => {
   if (originType !== 'client' && originType !== 'server') throw Error("Must setup with type 'server' or 'client'.");
-  socket = client.connect(`http://localhost:${config.PORT || 3861}/`);
+  socket = client.connect(`http://localhost:${config.PORT || 3861}/`, { transports: ["websocket"] }),
 
   console._intercept = (type, args) => {
     if (type === 'warn' || type === 'info') return null;
