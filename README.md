@@ -40,7 +40,7 @@ Run your application with
 ### User-Interface
 Go to localhost:3861 or the port configured to see the user interface of fullstack-monitor
 
-
+![Alt text](/img/main_page.PNG?raw=true "Main Page")
 
 
 
