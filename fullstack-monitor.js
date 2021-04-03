@@ -3,22 +3,74 @@ const client = require('socket.io-client');
 const Queue = require('./queue.js');
 
 let socket;
-let pauseMonitoring = false;
+let pauseMonitoring = true
 const config = { PORT: null };
 const queue = new Queue();
+const preQueue = [];
 
-const setup = async () => {
+const getStack = (type, args) => {
+  // Get stack trace information. By throwing an error, we get access to
+  // a stack trace. We then go up in the trace tree and filter out
+  // irrelevant information.
+  var stack = false;
+  try {
+    throw Error('');
+  } catch (error) {
+    // The lines containing 'console-history.js' are not relevant to us.
+    var stackParts = error.stack.split('\n');
+    stack = [];
+    for (var i = 0; i < stackParts.length; i++) {
+      if (
+        stackParts[i].indexOf('console-history.js') > -1 ||
+        stackParts[i].indexOf('console-history.min.js') > -1 ||
+        stackParts[i] === 'Error'
+      ) {
+        continue;
+      }
+      stack.push(stackParts[i].trim());
+    }
+  }
+  stack.shift();
+  stack.shift();
+  return stack;
+}
+
+const setup = async (originType) => {
   socket = client.connect(`http://localhost:${config.PORT || 3861}/`);
+
+  console._intercept = (type, args) => {
+    if (type === 'warn' || type === 'info') return null;
+    // Collect the timestamp of the console log.
+    const timestamp = new Date().toISOString().split('T').join(' - ').slice(0, -1);
+
+    preQueue.push({
+      type,
+      args,
+      stack: getStack(type, args),
+      timestamp
+    })
+    console._collect(type, args);
+  }
 
   function resolveWSConnection() {
     return new Promise((resolve) => {
       socket.on('connect', () => {
+        pauseMonitoring = false;
+        preQueue.forEach(log => {
+          const data = {
+            class: originType,
+            type: log.type,
+            timestamp: log.timestamp,
+            log: log.args[0],
+            stack: log.stack,
+          };
+          socket.emit('store-logs', data);
+        })
         resolve('connected');
       });
 
       socket.on('connect_error', () => {
-        pauseMonitoring = true;
-        console._log('Connection Failed to Socket');
+        console._log('Fullstack-Monitor Connection Failed to Socket');
         resolve('not connected');
       });
     });
@@ -27,43 +79,19 @@ const setup = async () => {
   await resolveWSConnection();
 
   console._intercept = (type, args) => {
-    if (!pauseMonitoring) {
-      // Your own code can go here, but the preferred method is to override this
-      // function in your own script, and add the line below to the end or
-      // begin of your own 'console._intercept' function.
-      // REMEMBER: Use only underscore console commands inside _intercept!
-      if (type !== 'warn' && type !== 'info') {
-        // Get stack trace information. By throwing an error, we get access to
-        // a stack trace. We then go up in the trace tree and filter out
-        // irrelevant information.
-        var stack = false;
-        try {
-          throw Error('');
-        } catch (error) {
-          // The lines containing 'console-history.js' are not relevant to us.
-          var stackParts = error.stack.split('\n');
-          stack = [];
-          for (var i = 0; i < stackParts.length; i++) {
-            if (
-              stackParts[i].indexOf('console-history.js') > -1 ||
-              stackParts[i].indexOf('console-history.min.js') > -1 ||
-              stackParts[i] === 'Error'
-            ) {
-              continue;
-            }
-            stack.push(stackParts[i].trim());
-          }
-        }
-        stack.shift();
-        queue.enqueue(() => console._collect(type, args, stack));
-      }
-    }
+    if (type === 'warn' || type === 'info') return null;
+    // Collect the timestamp of the console log.
+    const time = new Date().toISOString().split('T').join(' - ').slice(0, -1);
+    // Your own code can go here, but the preferred method is to override this
+    // function in your own script, and add the line below to the end or
+    // begin of your own 'console._intercept' function.
+    // REMEMBER: Use only underscore console commands inside _intercept!
+    const stack = getStack(type, args);
+    queue.enqueue(() => console._collect(type, args, stack, time));
   };
-  console._collect = (type, args, stack) => {
-    return new Promise((resolve) => {
-      // Collect the timestamp of the console log.
-      const time = new Date().toISOString().split('T').join(' - ').slice(0, -1);
 
+  console._collect = (type, args, stack, timestamp) => {
+    return new Promise((resolve) => {
       // Make sure the 'type' parameter is set. If no type is set, we fall
       // back to the default log type.
       if (!type) type = 'log';
@@ -80,7 +108,7 @@ const setup = async () => {
       const data = {
         class: 'server',
         type,
-        timestamp: time,
+        timestamp,
         log: args[0],
         stack,
       };
@@ -89,7 +117,7 @@ const setup = async () => {
         resolve('Success');
         console.history.push({
           type,
-          timestamp: time,
+          timestamp,
           arguments: args,
           stack,
         });
@@ -99,6 +127,8 @@ const setup = async () => {
 };
 
 const run = (req, res, next) => {
+  // Collect the timestamp of the console log.
+  const timestamp = new Date().toISOString().split('T').join(' - ').slice(0, -1);
   if (!pauseMonitoring) {
     queue.enqueue(() => {
       return new Promise((resolve) => {
@@ -121,11 +151,7 @@ const run = (req, res, next) => {
           const data = [
             {
               class: 'request',
-              timestamp: new Date()
-                .toISOString()
-                .split('T')
-                .join(' - ')
-                .slice(0, -1),
+              timestamp,
               fromIP:
                 req.headers['x-forwarded-for'] || req.connection.remoteAddress,
               method: req.method,
@@ -135,11 +161,7 @@ const run = (req, res, next) => {
             },
             {
               class: 'response',
-              timestamp: new Date()
-                .toISOString()
-                .split('T')
-                .join(' - ')
-                .slice(0, -1),
+              timestamp,
               responseData: body,
               responseStatus: res.statusCode,
               referer: req.headers.referer || '',
