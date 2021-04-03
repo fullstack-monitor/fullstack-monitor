@@ -37,6 +37,7 @@ const getStack = (type, args) => {
 }
 
 const setup = async (originType) => {
+  if (originType !== 'client' && originType !== 'server') throw Error("Must setup with type 'server' or 'client'.");
   socket = client.connect(`http://localhost:${config.PORT || 3861}/`);
 
   console._intercept = (type, args) => {
@@ -108,7 +109,7 @@ const setup = async (originType) => {
 
       // Add the log to our history.
       const data = {
-        class: 'server',
+        class: originType,
         type,
         timestamp,
         log: args[0],
