@@ -4,63 +4,48 @@ const Queue = require('./queue.js');
 
 let socket;
 let pauseMonitoring = false;
-const config = { PORT: null };
+const config = { PORT: null, TYPE: null };
 const queue = new Queue();
+const preConnectionQueue = [];
 
-const setup = async () => {
-  socket = client.connect(`http://localhost:${config.PORT || 3861}/`);
-
-  function resolveWSConnection() {
-    return new Promise((resolve) => {
-      socket.on('connect', () => {
-        resolve('connected');
-      });
-
-      socket.on('connect_error', () => {
-        pauseMonitoring = true;
-        console._log('Connection Failed to Socket');
-        resolve('not connected');
-      });
-    });
-  }
-
-  await resolveWSConnection();
-
-  console._intercept = (type, args) => {
-    if (!pauseMonitoring) {
-      // Your own code can go here, but the preferred method is to override this
-      // function in your own script, and add the line below to the end or
-      // begin of your own 'console._intercept' function.
-      // REMEMBER: Use only underscore console commands inside _intercept!
-      if (type !== 'warn' && type !== 'info') {
-        // Get stack trace information. By throwing an error, we get access to
-        // a stack trace. We then go up in the trace tree and filter out
-        // irrelevant information.
-        var stack = false;
-        try {
-          throw Error('');
-        } catch (error) {
-          // The lines containing 'console-history.js' are not relevant to us.
-          var stackParts = error.stack.split('\n');
-          stack = [];
-          for (var i = 0; i < stackParts.length; i++) {
-            if (
-              stackParts[i].indexOf('console-history.js') > -1 ||
-              stackParts[i].indexOf('console-history.min.js') > -1 ||
-              stackParts[i] === 'Error'
-            ) {
-              continue;
-            }
-            stack.push(stackParts[i].trim());
-          }
+const collectFromIntercept = (type, args) => {
+  if (type !== 'warn' && type !== 'info') {
+    console._log('inside if block')
+    // Get stack trace information. By throwing an error, we get access to
+    // a stack trace. We then go up in the trace tree and filter out
+    // irrelevant information.
+    var stack = false;
+    try {
+      throw Error('');
+    } catch (error) {
+      // The lines containing 'console-history.js' are not relevant to us.
+      var stackParts = error.stack.split('\n');
+      stack = [];
+      for (var i = 0; i < stackParts.length; i++) {
+        if (
+          stackParts[i].indexOf('console-history.js') > -1 ||
+          stackParts[i].indexOf('console-history.min.js') > -1 ||
+          stackParts[i] === 'Error'
+        ) {
+          continue;
         }
-        stack.shift();
-        queue.enqueue(() => console._collect(type, args, stack));
+        stack.push(stackParts[i].trim());
       }
     }
-  };
+    stack.shift();
+    return stack
+  }
+}
+
+const setup = async (originType) => {
+  config.TYPE = originType;
+  console.log('running setup')
+  socket = client.connect(`http://localhost:${config.PORT || 3861}/`);
+
   console._collect = (type, args, stack) => {
+    console._log('inside _ollect')
     return new Promise((resolve) => {
+      console._log('inside collect new Promise')
       // Collect the timestamp of the console log.
       const time = new Date().toISOString().split('T').join(' - ').slice(0, -1);
 
@@ -78,14 +63,17 @@ const setup = async () => {
 
       // Add the log to our history.
       const data = {
-        class: 'server',
+        class: config.TYPE,
         type,
         timestamp: time,
         log: args[0],
         stack,
       };
+      console._log('data :>> ', data);
       socket.emit('store-logs', data);
+      console._log('sent data to fullstack-monitor-cli');
       socket.on('store-logs', () => {
+        console._log('confirmed recieved from cli');
         resolve('Success');
         console.history.push({
           type,
@@ -95,6 +83,65 @@ const setup = async () => {
         });
       });
     });
+  };
+
+  console._intercept = (type, args) => {
+    if (type !== 'warn' && type !== 'info') {
+      const earlyLog = {
+        type,
+        args,
+        stack: collectFromIntercept(type, args),
+      };
+      if (earlyLog.stack) preConnectionQueue.push(earlyLog);
+    }
+  };
+
+  function resolveWSConnection() {
+    return new Promise((resolve) => {
+      socket.on('connect', () => {
+        console._log('connected to socket');
+        // iterate throught the preConnectionQueue
+        // push to the other queue
+        console._log('preConnectionQueue :>> ', preConnectionQueue);
+        while (preConnectionQueue.length) {
+          console._log('inside while loop')
+          const nextLog = preConnectionQueue.shift();
+          const { type, args, stack } = nextLog;
+          console._log('type :>> ', type);
+          console._log('args :>> ', args);
+          console._log('stack :>> ', stack);
+          console._log('nextLog :>> ', nextLog);
+          if (type && args && stack) queue.enqueue(() => console._collect(type, args, stack));
+        }
+        resolve('connected');
+      });
+
+      socket.on('connect_error', () => {
+        pauseMonitoring = true;
+        console._log('Connection Failed to Socket');
+        resolve('not connected');
+      });
+    });
+  }
+
+  await resolveWSConnection();
+
+  console._intercept = (type, args) => {
+    console._log('outside of paused monitoring', type)
+    if (!pauseMonitoring) {
+      console._log('inside intercept')
+      console._log('type :>> ', type);
+      // Your own code can go here, but the preferred method is to override this
+      // function in your own script, and add the line below to the end or
+      // begin of your own 'console._intercept' function.
+      // REMEMBER: Use only underscore console commands inside _intercept!
+      if (type !== 'warn' && type !== 'info') {
+        const stack = collectFromIntercept(type, args);
+        console._log('args :>> ', args);
+        console._log('stack :>> ', stack);
+        if (stack) queue.enqueue(() => console._collect(type, args, stack));
+      }
+    }
   };
 };
 
