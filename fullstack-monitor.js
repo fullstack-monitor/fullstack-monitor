@@ -7,6 +7,7 @@ let pauseMonitoring = true
 const config = { PORT: null };
 const queue = new Queue();
 const preQueue = [];
+let i = 0;
 
 const getStack = (type, args) => {
   // Get stack trace information. By throwing an error, we get access to
@@ -70,7 +71,8 @@ const setup = async (originType) => {
       });
 
       socket.on('connect_error', () => {
-        console._log('Fullstack-Monitor Connection Failed to Socket');
+        if (i < 1)console._log('Fullstack-Monitor Connection Failed to Socket');
+        i++;
         resolve('not connected');
       });
     });
