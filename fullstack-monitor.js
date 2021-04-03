@@ -35,25 +35,19 @@ const getStack = (type, args) => {
   return stack;
 }
 
-const setup = async () => {
+const setup = async (originType) => {
   socket = client.connect(`http://localhost:${config.PORT || 3861}/`);
 
   console._intercept = (type, args) => {
     if (type === 'warn' || type === 'info') return null;
-    const logTimestamp = new Date()
-      .toISOString()
-      .split('T')
-      .join(' - ')
-      .slice(0, -1)
+    // Collect the timestamp of the console log.
+    const timestamp = new Date().toISOString().split('T').join(' - ').slice(0, -1);
 
-    console._log('before WS is setup intercept function');
-    // console._log(`type`, type);
-    // console._log(`args`, args);
     preQueue.push({
       type,
       args,
       stack: getStack(type, args),
-      timestamp: logTimestamp
+      timestamp
     })
     console._collect(type, args);
   }
@@ -62,11 +56,21 @@ const setup = async () => {
     return new Promise((resolve) => {
       socket.on('connect', () => {
         pauseMonitoring = false;
+        preQueue.forEach(log => {
+          const data = {
+            class: originType,
+            type: log.type,
+            timestamp: log.timestamp,
+            log: log.args[0],
+            stack: log.stack,
+          };
+          socket.emit('store-logs', data);
+        })
         resolve('connected');
       });
 
       socket.on('connect_error', () => {
-        console._log('Connection Failed to Socket');
+        console._log('Fullstack-Monitor Connection Failed to Socket');
         resolve('not connected');
       });
     });
@@ -76,8 +80,8 @@ const setup = async () => {
 
   console._intercept = (type, args) => {
     if (type === 'warn' || type === 'info') return null;
-      // Collect the timestamp of the console log.
-      const time = new Date().toISOString().split('T').join(' - ').slice(0, -1);
+    // Collect the timestamp of the console log.
+    const time = new Date().toISOString().split('T').join(' - ').slice(0, -1);
     // Your own code can go here, but the preferred method is to override this
     // function in your own script, and add the line below to the end or
     // begin of your own 'console._intercept' function.
@@ -85,6 +89,7 @@ const setup = async () => {
     const stack = getStack(type, args);
     queue.enqueue(() => console._collect(type, args, stack, time));
   };
+
   console._collect = (type, args, stack, timestamp) => {
     return new Promise((resolve) => {
       // Make sure the 'type' parameter is set. If no type is set, we fall
