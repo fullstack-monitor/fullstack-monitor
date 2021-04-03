@@ -1,5 +1,17 @@
 # Fullstack-Monitor
 
+
+- [Fullstack-Monitor](#fullstack-monitor)
+  - [About](#about)
+  - [Instructions](#instructions)
+    - [Installation](#installation)
+    - [Front-end Setup](#front-end-setup)
+    - [Back-end Setup](#back-end-setup)
+    - [Run](#run)
+    - [User-Interface](#user-interface)
+  - [Example Project](#example-project)
+  - [Contributors](#contributors)
+
 ## About
 Fullstack-monitor is log monitoring tools for developers, offering visibility of console logs, requests and responses from both the Client and Server side of your application in one single place.
 
@@ -82,10 +94,15 @@ $ fullstack-monitor-cli --chrome
 
 6. With the Delete Button, users can delele all existing logs.
 
+## Example Project
+
+For an example of `Fullstack-Monitor` installed on a project see this GitHub Repo here:
+
+- [Example-Project](https://github.com/PFA-Pink-Fairy-Armadillo/Example-Project)
 
 ## Contributors
 
-- Paulo
-- Aye
-- Mohammed
-- Tom
+- [Paulo Choi](https://github.com/paulochoi)
+- [Aye Moe](https://github.com/ayemmoe)
+- [Mohammed Naser](https://github.com/mnaser11218)
+- [Tom Harper](https://github.com/tommyrharper)
