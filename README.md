@@ -1,6 +1,16 @@
 # Fullstack-Monitor
+
 ## About
-Fullstack-monitor is a logging Tool for Developers, to be able to see console logs, request, response from Client and Server side of application. It is currently intended to use in developer mode. The Tool has  two dependencies, console.history and socket.io.
+Fullstack-monitor is log monitoring tools for developers, offering visibility of console logs, requests and responses from both the Client and Server side of your application in one single place.
+
+This makes it easy to see what is happening across the stack as your front and back-end communicate.
+
+In order to use this, you must also install the [Fullstack-Monitor-CLI](https://github.com/PFA-Pink-Fairy-Armadillo/fullstack-monitor-cli) npm package.
+
+- [Fullstack-Monitor-CLI Github](https://github.com/PFA-Pink-Fairy-Armadillo/fullstack-monitor-cli).
+- [Fullstack-Monitor-CLI NPM Package](https://www.npmjs.com/package/fullstack-monitor-cli).
+
+- [Fullstack-Monitor NPM Package](https://www.npmjs.com/package/fullstack-monitor)
 
 ## Instructions
 
@@ -9,27 +19,27 @@ Fullstack-monitor is a logging Tool for Developers, to be able to see console lo
 npm install fullstack-monitor
 ```
 ### Front-end Setup
-1. Import fullstack-monitor in front-end, usually in index.js
+1. Import fullstack-monitor in front-end, usually `in index.js`.
 ```
   import FL from 'fullstack-monitor'
 ```
             
-2. Configure for the user's desired port, by default it will set to 3861.
+2. Invoke the `FL.setup` function with the string `client` argument.
 ```
-  FL.config.port = 3861
-  FL.setup();
+  FL.setup('client');
 ```
+- Please note, any code executed before the `setup` function is invoked will not be monitored.
 
 ### Back-end Setup
-1. Import fullstack- monitor in back-end, usually in server.js
+1. Import fullstack- monitor in back-end, usually in `server.js` or `index.js`, with the `server` argument. 
 ```
   const fl = require('fullstack-monitor');
-  fl.setup();
+  fl.setup('server');
 ```
 
-2. Invoke  fl.run  after all routes are acquried/imported.
+1. Pass the `fl.run` into `app.use` as a middleware function, where `app` refers to `const app = express();`.
 ```
-  App.use(fl.run);
+  app.use(fl.run);
 ```
 
 
@@ -38,10 +48,22 @@ Run your application with
 ```
   npm run dev
 ```
+- Or the equivalent command in your setup.
 
 ### User-Interface
-1. Go to localhost:3861 or the port configured to see the user interface of fullstack-monitor
-2. In Home Page, all logs types are logs are shown, currently there are four diffrent types of logs.
+1. Globally install [Fullstack-Monitor-CLI](https://www.npmjs.com/package/fullstack-monitor-cli)
+```
+$ npm install -g fullstack-monitor-cli
+```
+2. Bootup the `Fullstack-Monitor-CLI` server.
+```
+$ fullstack-monitor-cli --start
+```
+3. Go to `localhost:3861` or the port configured to see the user interface of fullstack-monitor. Or just use the `--chrome` command:
+```
+$ fullstack-monitor-cli --chrome
+```
+4. In Home Page, all logs types are logs are shown, currently there are four diffrent types of logs.
     - Console.log coming from the client side - as  Type : Client
     - Console.log coming from the server side - as  Type : Server
     - Request coming from the client side - as Type : Request
@@ -59,8 +81,6 @@ Run your application with
 ![Alt text](/img/detailed_info.PNG?raw=true "Detailed Info")
 
 6. With the Delete Button, users can delele all existing logs.
-
-
 
 
 ## Contributors
