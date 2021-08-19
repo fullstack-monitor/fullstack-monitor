@@ -104,3 +104,5 @@ For an example of `Fullstack-Monitor` installed on a project see this GitHub Rep
 - [Aye Moe](https://github.com/ayemmoe)
 - [Mohammed Naser](https://github.com/mnaser11218)
 - [Tom Harper](https://github.com/tommyrharper)
+- [Xiao Li](https://github.com/xiaotongli)
+- [Pat Liu](https://github.com/patrickliuhhs)
